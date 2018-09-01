@@ -174,11 +174,10 @@ namespace Python.Runtime
                 Console.WriteLine("TODO: {0}", method.Name);
             }
 
-            IDictionaryEnumerator iter = info.members.GetEnumerator();
-            while (iter.MoveNext())
+            foreach (KeyValuePair<string, ManagedType> pair in info.members)
             {
-                var item = (ManagedType)iter.Value;
-                var name = (string)iter.Key;
+                ManagedType item = pair.Value;
+                string name = pair.Key;
                 Runtime.PyDict_SetItemString(dict, name, item.pyHandle);
             }
 
@@ -229,7 +228,7 @@ namespace Python.Runtime
 
         private static ClassInfo GetClassInfo(Type type)
         {
-            var ci = new ClassInfo(type);
+            var ci = new ClassInfo();
             var methods = new Hashtable();
             ArrayList list;
             MethodInfo meth;
@@ -431,11 +430,11 @@ namespace Python.Runtime
     internal class ClassInfo
     {
         public Indexer indexer;
-        public Hashtable members;
+        public Dictionary<string, ManagedType> members;
 
-        internal ClassInfo(Type t)
+        internal ClassInfo()
         {
-            members = new Hashtable();
+            members = new Dictionary<string, ManagedType>();
             indexer = null;
         }
     }
