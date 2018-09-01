@@ -19,6 +19,7 @@ namespace Python.Runtime
     {
         private static Dictionary<Type, ClassBase> cache;
         private static Type dtype;
+        private static Dictionary<Type, List<MethodInfo>> extensionMethods;
 
         private ClassManager()
         {
@@ -32,6 +33,7 @@ namespace Python.Runtime
             // Was Delegate, which caused a null MethodInfo returned from GetMethode("Invoke")
             // and crashed on Linux under Mono.
             dtype = typeof(MulticastDelegate);
+            extensionMethods = new Dictionary<Type, List<MethodInfo>>();
         }
 
         /// <summary>
@@ -54,6 +56,23 @@ namespace Python.Runtime
             return cb;
         }
 
+        internal static void RegisterExtensionMethod(MethodInfo method)
+        {
+            Type extendedType = method.GetParameters()[0].ParameterType;
+
+            List<MethodInfo> methods;
+            try
+            {
+                methods = extensionMethods[extendedType];
+            }
+            catch (KeyNotFoundException)
+            {
+                methods = new List<MethodInfo>();
+                extensionMethods.Add(extendedType, methods);
+            }
+
+            methods.Add(method);
+        }
 
         /// <summary>
         /// Create a new ClassBase-derived instance that implements a reflected
@@ -134,6 +153,26 @@ namespace Python.Runtime
             // Finally, initialize the class __dict__ and return the object.
             IntPtr dict = Marshal.ReadIntPtr(tp, TypeOffset.tp_dict);
 
+            // TODO: JBW - Also need to get extension methods for base class
+            List<MethodInfo> extensions;
+            try
+            {
+                extensions = extensionMethods[type];
+            }
+            catch (KeyNotFoundException)
+            {
+                extensions = new List<MethodInfo>();
+            }
+
+            if (extensions.Count > 0)
+            {
+                Console.WriteLine("TODO: Add extension methods for {0}", type);
+            }
+            foreach (MethodInfo method in extensions)
+            {
+                // TODO: JBW - Merge extension methods with method list here
+                Console.WriteLine("TODO: {0}", method.Name);
+            }
 
             IDictionaryEnumerator iter = info.members.GetEnumerator();
             while (iter.MoveNext())

@@ -368,6 +368,19 @@ namespace Python.Runtime
                 {
                     GenericUtil.Register(t);
                 }
+
+                // build list of extension methods
+                if (t.IsSealed && !t.IsGenericType && !t.IsNested)
+                {
+                    MethodInfo[] methods = t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    foreach (MethodInfo method in methods)
+                    {
+                        if (method.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false))
+                        {
+                            ClassManager.RegisterExtensionMethod(method);
+                        }
+                    }
+                }
             }
         }
 
