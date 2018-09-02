@@ -228,13 +228,12 @@ namespace Python.Runtime
 
         private static ClassInfo GetClassInfo(Type type)
         {
-            var ci = new ClassInfo();
-            var methods = new Hashtable();
-            ArrayList list;
+            ClassInfo ci = new ClassInfo();
+            Dictionary<string, List<MethodInfo>> methods = new Dictionary<string, List<MethodInfo>>();
+            List<MethodInfo> list;
             MethodInfo meth;
             ManagedType ob;
             string name;
-            object item;
             Type tp;
             int i, n;
 
@@ -251,7 +250,7 @@ namespace Python.Runtime
 
             MemberInfo[] info = type.GetMembers(flags);
             var local = new Hashtable();
-            var items = new ArrayList();
+            List<MemberInfo> items = new List<MemberInfo>();
             MemberInfo m;
 
             // Loop through once to find out which names are declared
@@ -304,10 +303,8 @@ namespace Python.Runtime
                 }
             }
 
-            for (i = 0; i < items.Count; i++)
+            foreach (MemberInfo mi in items)
             {
-                var mi = (MemberInfo)items[i];
-
                 switch (mi.MemberType)
                 {
                     case MemberTypes.Method:
@@ -318,12 +315,15 @@ namespace Python.Runtime
                             continue;
                         }
                         name = meth.Name;
-                        item = methods[name];
-                        if (item == null)
+                        try
                         {
-                            item = methods[name] = new ArrayList();
+                            list = methods[name];
                         }
-                        list = (ArrayList)item;
+                        catch (KeyNotFoundException)
+                        {
+                            list = new List<MethodInfo>();
+                            methods.Add(name, list);
+                        }
                         list.Add(meth);
                         continue;
 
@@ -409,14 +409,12 @@ namespace Python.Runtime
                 }
             }
 
-            IDictionaryEnumerator iter = methods.GetEnumerator();
-
-            while (iter.MoveNext())
+            foreach (KeyValuePair<string, List<MethodInfo>> pair in methods)
             {
-                name = (string)iter.Key;
-                list = (ArrayList)iter.Value;
+                name = pair.Key;
+                list = pair.Value;
 
-                var mlist = (MethodInfo[])list.ToArray(typeof(MethodInfo));
+                MethodInfo[] mlist = list.ToArray();
 
                 ob = new MethodObject(type, name, mlist);
                 ci.members[name] = ob;
