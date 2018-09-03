@@ -153,27 +153,6 @@ namespace Python.Runtime
             // Finally, initialize the class __dict__ and return the object.
             IntPtr dict = Marshal.ReadIntPtr(tp, TypeOffset.tp_dict);
 
-            // TODO: JBW - Also need to get extension methods for base class
-            List<MethodInfo> extensions;
-            try
-            {
-                extensions = extensionMethods[type];
-            }
-            catch (KeyNotFoundException)
-            {
-                extensions = new List<MethodInfo>();
-            }
-
-            if (extensions.Count > 0)
-            {
-                Console.WriteLine("TODO: Add extension methods for {0}", type);
-            }
-            foreach (MethodInfo method in extensions)
-            {
-                // TODO: JBW - Merge extension methods with method list here
-                Console.WriteLine("TODO: {0}", method.Name);
-            }
-
             foreach (KeyValuePair<string, ManagedType> pair in info.members)
             {
                 ManagedType item = pair.Value;
@@ -409,6 +388,8 @@ namespace Python.Runtime
                 }
             }
 
+            AddExtensionMethods(type, methods);
+
             foreach (KeyValuePair<string, List<MethodInfo>> pair in methods)
             {
                 name = pair.Key;
@@ -422,8 +403,29 @@ namespace Python.Runtime
 
             return ci;
         }
-    }
 
+        private static void AddExtensionMethods(Type type, Dictionary<string, List<MethodInfo>> methods)
+        {
+            // TODO: JBW - Also need to get extension methods for base class
+
+            List<MethodInfo> extensions;
+            if (extensionMethods.TryGetValue(type, out extensions))
+            {
+                foreach (MethodInfo extMethod in extensions)
+                {
+                    List<MethodInfo> methodList;
+                    if (!methods.TryGetValue(extMethod.Name, out methodList))
+                    {
+                        methodList = new List<MethodInfo>();
+                        methods.Add(extMethod.Name, methodList);
+                    }
+
+                    // add extension method
+                    methodList.Add(extMethod);
+                }
+            }
+        }
+    }
 
     internal class ClassInfo
     {
